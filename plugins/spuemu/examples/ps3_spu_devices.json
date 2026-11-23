@@ -1,0 +1,54 @@
+{
+  "dma_regions": [
+    {
+      "name": "host_shared_buffer",
+      "ea": "0x10000000",
+      "size": 65536,
+      "read_only": false
+    },
+    {
+      "name": "sample_header_blob",
+      "ea": "0x20000000",
+      "hex": "7F454C46010201000000000000000000"
+    }
+  ],
+  "devices": [
+    {
+      "channel": "SPU_RdInMbox",
+      "type": "fifo",
+      "name": "ppu_to_spu_mbox",
+      "rx": ["0x10000000", "0x00001000"],
+      "on_empty": "break"
+    },
+    {
+      "channel": "SPU_IsoCntl",
+      "type": "responder",
+      "name": "ps3_iso_controller",
+      "rules": [
+        {
+          "when_write": "0x00000001",
+          "reply": ["0x00000000", "0xCAFEBABE"],
+          "reply_channel": "SPU_IsoStat"
+        },
+        {
+          "when_write": "*",
+          "reply": ["0x00000000"],
+          "reply_channel": "SPU_IsoStat"
+        }
+      ]
+    },
+    {
+      "channel": "SPU_IsoStat",
+      "type": "fifo",
+      "name": "ps3_iso_status",
+      "on_empty": "break"
+    },
+    {
+      "channel": "SPU_IsoIdent",
+      "type": "register",
+      "name": "ps3_iso_ident",
+      "value": "0x00000001",
+      "read_only": true
+    }
+  ]
+}

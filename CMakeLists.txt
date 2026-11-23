@@ -1,0 +1,48 @@
+cmake_minimum_required(VERSION 3.25)
+
+if(NOT PROJECT_NAME)
+    if(NOT DEFINED IDASDK OR "${IDASDK}" STREQUAL "")
+        if(DEFINED ENV{IDASDK} AND NOT "$ENV{IDASDK}" STREQUAL "")
+            set(IDASDK "$ENV{IDASDK}")
+        elseif(DEFINED IDA_SDK_DIR AND EXISTS "${IDA_SDK_DIR}/include/pro.h")
+            set(IDASDK "${IDA_SDK_DIR}")
+        elseif(DEFINED ENV{IDA_SDK_DIR} AND EXISTS "$ENV{IDA_SDK_DIR}/include/pro.h")
+            set(IDASDK "$ENV{IDA_SDK_DIR}")
+        elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/../../include/pro.h")
+            get_filename_component(IDASDK "${CMAKE_CURRENT_SOURCE_DIR}/../.." ABSOLUTE)
+        endif()
+    endif()
+
+    if(IDASDK AND EXISTS "${IDASDK}/cmake/idasdk_standalone.cmake")
+        set(ENV{IDASDK} "${IDASDK}")
+        include("${IDASDK}/cmake/idasdk_standalone.cmake")
+    endif()
+
+    project(spu_suite LANGUAGES CXX)
+    set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+    if(IDASDK AND EXISTS "${IDASDK}/cmake/idasdk_init.cmake")
+        include("${IDASDK}/cmake/idasdk_init.cmake")
+        find_package(idasdk REQUIRED HINTS "${IDASDK}/cmake")
+    endif()
+
+    enable_testing()
+endif()
+
+option(SPU_BUILD_PROCMOD "Build the Cell SPU IDA Pro processor module (spu)" ON)
+option(SPU_BUILD_EMU "Build the Cell SPU emulator, tests, and native debugger plugin (spuemu / spudbg)" ON)
+
+if(SPU_BUILD_PROCMOD)
+    if(COMMAND ida_add_procmod)
+        add_subdirectory(module/spu)
+    else()
+        message(STATUS "SPU processor module skipped (IDA SDK not configured)")
+    endif()
+endif()
+
+if(SPU_BUILD_EMU)
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/plugins/spuemu/CMakeLists.txt")
+        add_subdirectory(plugins/spuemu)
+    endif()
+endif()
